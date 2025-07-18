@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Игра: Типы подчинительной связи (Оффлайн-версия)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap');
+        
+        body {
+            font-family: 'Comic Neue', cursive;
+            background-color: #fffbeb;
+            background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23f59e0b' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+            overflow-x: hidden;
+        }
+        
+        h1, h2, h3 {
+            font-family: 'Bangers', cursive;
+            letter-spacing: 1px;
+        }
+        
+        .word-item {
+            cursor: grab;
+            transition: all 0.3s;
+            user-select: none;
+            transform: rotate(-1deg);
+            box-shadow: 3px 3px 0 rgba(0,0,0,0.2);
+        }
+        
+        .word-item:nth-child(odd) {
+            transform: rotate(1deg);
+        }
+        
+        .word-item:active {
+            cursor: grabbing;
+            transform: scale(1.05) rotate(0);
+        }
+        
+        .bucket {
+            transition: all 0.3s;
+            min-height: 250px;
+            position: relative;
+            overflow: visible;
+        }
+        
+        .bucket:before {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 40px;
+            height: 20px;
+            background: #888;
+            border-radius: 20px 20px 0 0;
+            z-index: 1;
+        }
+        
+        .bucket.highlight {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(255, 213, 0, 0.7);
+        }
+        
+        .firework {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            animation: explode 1s forwards;
+            opacity: 0;
+        }
+        
+        @keyframes explode {
+            0% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px);
+                opacity: 0;
+            }
+        }
+        
+        .comic-bubble {
+            position: relative;
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            border: 3px solid #333;
+            box-shadow: 5px 5px 0px rgba(0,0,0,0.2);
+        }
+        
+        .comic-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 20px 15px 0;
+            border-style: solid;
+            border-color: white transparent transparent;
+            z-index: 1;
+        }
+        
+        .comic-bubble:before {
+            content: '';
+            position: absolute;
+            bottom: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 23px 18px 0;
+            border-style: solid;
+            border-color: #333 transparent transparent;
+            z-index: 0;
+        }
+        
+        .success-frame {
+            background: white;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .success-frame:before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: repeating-radial-gradient(circle at 50% 50%, transparent 0, transparent 10px, rgba(255,255,0,0.1) 10px, rgba(255,255,0,0.1) 20px);
+            z-index: 0;
+        }
+        
+        .bounce {
+            animation: bounce 0.5s;
+        }
+        
+        @keyframes bounce {
+            0%, 100% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.1);
+            }
+        }
+        
+        .comic-border {
+            border-style: solid;
+            border-width: 3px;
+            border-color: #000;
+            box-shadow: 5px 5px 0 rgba(0,0,0,0.2);
+        }
+        
+        .progress-container {
+            background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23000000' fill-opacity='0.05' fill-rule='evenodd'%3E%3Cpath d='M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z'/%3E%3C/g%3E%3C/svg%3E");
+        }
+        
+        .zoom-in {
+            animation: zoomIn 0.5s forwards;
+        }
+        
+        @keyframes zoomIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .starburst {
+            position: absolute;
+            background: #ffde59;
+            width: 120px;
+            height: 120px;
+            transform: rotate(20deg);
+            right: -30px;
+            top: -30px;
+            z-index: 1;
+        }
+        
+        .starburst:before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffde59;
+            transform: rotate(135deg);
+        }
+        
+        .starburst-text {
+            position: relative;
+            z-index: 2;
+            transform: rotate(-20deg);
+            font-family: 'Bangers', cursive;
+            color: #d00;
+            text-shadow: 1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff;
+        }
+        
+        .speech-bubble {
+            position: relative;
+            background: #fff;
+            border-radius: 10px;
+            padding: 10px;
+            border: 3px solid #000;
+            margin-bottom: 20px;
+        }
+        
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: -15px;
+            left: 20px;
+            border-width: 15px 15px 0;
+            border-style: solid;
+            border-color: #fff transparent transparent;
+        }
+        
+        .speech-bubble:before {
+            content: '';
+            position: absolute;
+            bottom: -19px;
+            left: 18px;
+            border-width: 17px 17px 0;
+            border-style: solid;
+            border-color: #000 transparent transparent;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <header class="text-center mb-8 relative">
+            <div class="starburst">
+                <div class="starburst-text flex items-center justify-center h-full text-xl">
+                    ИГРА!
+                </div>
+            </div>
+            <h1 class="text-5xl font-bold text-blue-800 mb-2 text-shadow-lg" style="text-shadow: 3px 3px 0 #FCD34D, 6px 6px 0 #FB923C;">Типы подчинительной связи</h1>
+            <div class="speech-bubble inline-block mt-2">
+                <p class="text-xl">Перетащи словосочетания в правильные столбики!</p>
+            </div>
+        </header>
+        
+        <div class="flex flex-col md:flex-row gap-6 mb-8">
+            <div class="progress-container w-full md:w-2/3 bg-white rounded-xl p-4 shadow-lg comic-border">
+                <div class="flex justify-between mb-2">
+                    <span class="font-bold text-gray-700">Прогресс:</span>
+                    <span id="progress-text" class="font-bold text-blue-600">0/15</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-6 border-2 border-gray-400">
+                    <div id="progress-bar" class="bg-gradient-to-r from-blue-500 to-purple-600 h-full rounded-full relative" style="width: 0%">
+                        <div class="absolute inset-0 overflow-hidden">
+                            <div class="w-full h-full opacity-30 bg-stripes"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="score-container w-full md:w-1/3 bg-white rounded-xl p-4 shadow-lg comic-border">
+                <div class="flex justify-between">
+                    <span class="font-bold text-gray-700">Правильно:</span>
+                    <span id="correct-count" class="font-bold text-green-600">0</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="font-bold text-gray-700">Ошибки:</span>
+                    <span id="error-count" class="font-bold text-red-600">0</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="flex flex-wrap gap-6 justify-center mb-12">
+            <div id="bucket-1" class="bucket w-full md:w-[30%] bg-gradient-to-b from-blue-300 to-blue-500 rounded-t-3xl rounded-b-3xl p-4 shadow-lg comic-border border-blue-700 flex flex-col">
+                <div class="text-center mb-4">
+                    <h2 class="text-2xl font-bold text-white bg-blue-700 rounded-full py-2 px-4 inline-block comic-border border-white transform -rotate-2">Согласование</h2>
+                </div>
+                <div class="flex-grow flex flex-wrap gap-2 content-start items-start justify-center p-2 min-h-[250px]"></div>
+            </div>
+            
+            <div id="bucket-2" class="bucket w-full md:w-[30%] bg-gradient-to-b from-purple-300 to-purple-500 rounded-t-3xl rounded-b-3xl p-4 shadow-lg comic-border border-purple-700 flex flex-col">
+                <div class="text-center mb-4">
+                    <h2 class="text-2xl font-bold text-white bg-purple-700 rounded-full py-2 px-4 inline-block comic-border border-white transform rotate-2">Управление</h2>
+                </div>
+                <div class="flex-grow flex flex-wrap gap-2 content-start items-start justify-center p-2 min-h-[250px]"></div>
+            </div>
+            
+            <div id="bucket-3" class="bucket w-full md:w-[30%] bg-gradient-to-b from-green-300 to-green-500 rounded-t-3xl rounded-b-3xl p-4 shadow-lg comic-border border-green-700 flex flex-col">
+                <div class="text-center mb-4">
+                    <h2 class="text-2xl font-bold text-white bg-green-700 rounded-full py-2 px-4 inline-block comic-border border-white transform -rotate-1">Примыкание</h2>
+                </div>
+                <div class="flex-grow flex flex-wrap gap-2 content-start items-start justify-center p-2 min-h-[250px]"></div>
+            </div>
+        </div>
+        
+        <div id="words-container" class="bg-white rounded-xl p-6 shadow-lg comic-border mb-8 bg-gradient-to-r from-yellow-50 to-orange-50">
+            <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center transform -rotate-1">Словосочетания:</h3>
+            <div class="flex flex-wrap gap-3 justify-center"></div>
+        </div>
+        
+        <div id="feedback" class="comic-bubble hidden text-center p-6 mb-8 zoom-in">
+            <p id="feedback-text" class="text-xl font-bold"></p>
+        </div>
+        
+        <div id="success-modal" class="fixed inset-0 flex items-center justify-center z-50 hidden">
+            <div class="absolute inset-0 bg-black bg-opacity-50"></div>
+            <div class="success-frame relative z-10 bg-white rounded-xl p-8 max-w-lg w-full mx-4 comic-border border-yellow-400 shadow-2xl">
+                <div class="text-center relative z-10">
+                    <h2 class="text-4xl font-bold text-blue-800 mb-4" style="text-shadow: 2px 2px 0 #FCD34D;">ПОЗДРАВЛЯЕМ!</h2>
+                    <p class="text-2xl mb-6">Ты успешно распределил все словосочетания!</p>
+                    
+                    <div class="stats flex justify-around mb-6">
+                        <div class="stat bg-green-100 p-4 rounded-xl comic-border">
+                            <div class="text-green-600 font-bold text-4xl" id="final-correct">0</div>
+                            <div class="text-gray-600">Правильно</div>
+                        </div>
+                        <div class="stat bg-red-100 p-4 rounded-xl comic-border">
+                            <div class="text-red-600 font-bold text-4xl" id="final-errors">0</div>
+                            <div class="text-gray-600">Ошибки</div>
+                        </div>
+                    </div>
+                    
+                    <button id="restart-btn" class="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white font-bold py-3 px-6 rounded-full text-xl transition-all transform hover:scale-105 shadow-lg comic-border">
+                        Играть снова
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+
+            let audioContext = null;
+
+            // START: Sound Generation using Web Audio API
+            function initAudio() {
+                if (audioContext) return audioContext;
+                try {
+                    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    return audioContext;
+                } catch (e) {
+                    console.error("Web Audio API is not supported in this browser.");
+                    return null;
+                }
+            }
+            
+            // Unlock audio context on the first user gesture
+            document.body.addEventListener('click', initAudio, { once: true });
+            document.body.addEventListener('dragstart', initAudio, { once: true });
+
+
+            function playCorrectSound() {
+                const context = initAudio();
+                if (!context) return;
+                
+                const oscillator = context.createOscillator();
+                const gainNode = context.createGain();
+
+                oscillator.type = 'sine'; // A clean, pleasant sound
+                oscillator.frequency.setValueAtTime(600, context.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(900, context.currentTime + 0.1);
+
+                gainNode.gain.setValueAtTime(0.3, context.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.2);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(context.destination);
+
+                oscillator.start(context.currentTime);
+                oscillator.stop(context.currentTime + 0.2);
+            }
+
+            function playWrongSound() {
+                const context = initAudio();
+                if (!context) return;
+                
+                const oscillator = context.createOscillator();
+                const gainNode = context.createGain();
+
+                oscillator.type = 'sawtooth'; // A more "buzzy" error sound
+                oscillator.frequency.setValueAtTime(200, context.currentTime);
+                oscillator.frequency.exponentialRampToValueAtTime(100, context.currentTime + 0.2);
+
+                gainNode.gain.setValueAtTime(0.3, context.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.3);
+
+                oscillator.connect(gainNode);
+                gainNode.connect(context.destination);
+
+                oscillator.start(context.currentTime);
+                oscillator.stop(context.currentTime + 0.3);
+            }
+
+            function playVictorySound() {
+                const context = initAudio();
+                if (!context) return;
+                
+                try {
+                    const oscillator = context.createOscillator();
+                    const gainNode = context.createGain();
+                    
+                    oscillator.type = 'square';
+                    gainNode.gain.setValueAtTime(0.3, context.currentTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 1.5);
+
+                    oscillator.connect(gainNode);
+                    gainNode.connect(context.destination);
+
+                    // Simple victory melody (C major arpeggio)
+                    oscillator.frequency.setValueAtTime(523.25, context.currentTime); // C5
+                    oscillator.frequency.setValueAtTime(659.25, context.currentTime + 0.2); // E5
+                    oscillator.frequency.setValueAtTime(783.99, context.currentTime + 0.4); // G5
+                    oscillator.frequency.setValueAtTime(1046.50, context.currentTime + 0.6); // C6
+
+                    oscillator.start(context.currentTime);
+                    oscillator.stop(context.currentTime + 1.5);
+                } catch (e) {
+                    console.error("Error playing victory sound:", e);
+                }
+            }
+            // END: Sound Generation
+
+            const wordsList = [
+                { text: "весело смеяться", type: "примыкание", explanation: "Наречие 'весело' примыкает к глаголу 'смеяться'" },
+                { text: "зимний вечер", type: "согласование", explanation: "Прилагательное 'зимний' согласуется с существительным 'вечер' в роде, числе и падеже" },
+                { text: "вести разговор", type: "управление", explanation: "Глагол 'вести' управляет существительным 'разговор' в винительном падеже" },
+                { text: "туристическая база", type: "согласование", explanation: "Прилагательное 'туристическая' согласуется с существительным 'база' в роде, числе и падеже" },
+                { text: "облако над морем", type: "управление", explanation: "Существительное 'облако' с предлогом 'над' управляет существительным 'морем' в творительном падеже" },
+                { text: "долго смотреть", type: "примыкание", explanation: "Наречие 'долго' примыкает к глаголу 'смотреть'" },
+                { text: "синеватая мгла", type: "согласование", explanation: "Прилагательное 'синеватая' согласуется с существительным 'мгла' в роде, числе и падеже" },
+                { text: "смотреть на звёзды", type: "управление", explanation: "Глагол 'смотреть' с предлогом 'на' управляет существительным 'звёзды' в винительном падеже" },
+                { text: "пение артистов", type: "управление", explanation: "Существительное 'пение' управляет существительным 'артистов' в родительном падеже" },
+                { text: "задумчиво слушать", type: "примыкание", explanation: "Наречие 'задумчиво' примыкает к глаголу 'слушать'" },
+                { text: "учить правило", type: "управление", explanation: "Глагол 'учить' управляет существительным 'правило' в винительном падеже" },
+                { text: "весьма привлекательный", type: "примыкание", explanation: "Наречие 'весьма' примыкает к прилагательному 'привлекательный'" },
+                { text: "пятеро друзей", type: "управление", explanation: "Числительное 'пятеро' управляет существительным 'друзей' в родительном падеже" },
+                { text: "что-то таинственное", type: "согласование", explanation: "Местоимение 'что-то' согласуется с прилагательным 'таинственное' в роде, числе и падеже" },
+                { text: "любовь к животным", type: "управление", explanation: "Существительное 'любовь' с предлогом 'к' управляет существительным 'животным' в дательном падеже" }
+            ];
+            
+            const buckets = {
+                "согласование": document.getElementById("bucket-1"),
+                "управление": document.getElementById("bucket-2"),
+                "примыкание": document.getElementById("bucket-3")
+            };
+            
+            let draggedItem = null;
+            let correctCount = 0;
+            let errorCount = 0;
+            let completedWords = 0;
+            let shuffledWords = [...wordsList].sort(() => Math.random() - 0.5);
+            
+            const wordsContainer = document.querySelector("#words-container .flex");
+            const progressBar = document.getElementById("progress-bar");
+            const progressText = document.getElementById("progress-text");
+            const correctCountEl = document.getElementById("correct-count");
+            const errorCountEl = document.getElementById("error-count");
+            const feedback = document.getElementById("feedback");
+            const feedbackText = document.getElementById("feedback-text");
+            const successModal = document.getElementById("success-modal");
+            const finalCorrect = document.getElementById("final-correct");
+            const finalErrors = document.getElementById("final-errors");
+            const restartBtn = document.getElementById("restart-btn");
+            
+            function initGame() {
+                wordsContainer.innerHTML = "";
+                Object.values(buckets).forEach(bucket => {
+                    bucket.querySelector(".flex-grow").innerHTML = "";
+                });
+                
+                correctCount = 0;
+                errorCount = 0;
+                completedWords = 0;
+                
+                updateCounters();
+                updateProgress();
+                
+                shuffledWords.forEach((word, index) => {
+                    createWordItem(word, wordsContainer);
+                });
+            }
+            
+            function createWordItem(word, container) {
+                const colors = [
+                    "bg-yellow-100 border-yellow-400 text-yellow-800",
+                    "bg-pink-100 border-pink-400 text-pink-800",
+                    "bg-blue-100 border-blue-400 text-blue-800",
+                    "bg-green-100 border-green-400 text-green-800",
+                    "bg-orange-100 border-orange-400 text-orange-800"
+                ];
+                
+                const randomColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                const wordEl = document.createElement("div");
+                wordEl.className = `word-item p-3 rounded-lg comic-border ${randomColor} font-bold`;
+                wordEl.textContent = word.text;
+                wordEl.dataset.type = word.type;
+                wordEl.dataset.explanation = word.explanation;
+                wordEl.dataset.originalText = word.text;
+                wordEl.draggable = true;
+                
+                wordEl.addEventListener("dragstart", dragStart);
+                container.appendChild(wordEl);
+                
+                return wordEl;
+            }
+            
+            function dragStart(e) {
+                draggedItem = e.target;
+                setTimeout(() => {
+                    e.target.classList.add("opacity-50");
+                }, 0);
+            }
+            
+            function dragEnd(e) {
+                if (draggedItem) {
+                    draggedItem.classList.remove("opacity-50");
+                    draggedItem = null;
+                }
+                
+                Object.values(buckets).forEach(bucket => {
+                    bucket.classList.remove("highlight");
+                });
+            }
+            
+            function dragOver(e) {
+                e.preventDefault();
+                if (this.classList.contains("bucket")) {
+                    this.classList.add("highlight");
+                }
+            }
+            
+            function dragLeave(e) {
+                if (this.classList.contains("bucket")) {
+                    this.classList.remove("highlight");
+                }
+            }
+            
+            function drop(e) {
+                e.preventDefault();
+                
+                if (!draggedItem) return;
+                
+                const bucketType = this.id === "bucket-1" ? "согласование" : 
+                                  this.id === "bucket-2" ? "управление" : "примыкание";
+                
+                const isCorrect = draggedItem.dataset.type === bucketType;
+                const isMovingFromBucket = draggedItem.parentElement.closest(".bucket") !== null;
+                
+                if (isMovingFromBucket) {
+                    const previousBucketType = draggedItem.parentElement.closest(".bucket").id === "bucket-1" ? "согласование" : 
+                                             draggedItem.parentElement.closest(".bucket").id === "bucket-2" ? "управление" : "примыкание";
+                    const wasPreviouslyCorrect = draggedItem.dataset.type === previousBucketType;
+                    
+                    if (wasPreviouslyCorrect) {
+                        correctCount--;
+                    } else {
+                        errorCount--;
+                    }
+                } else {
+                    completedWords++;
+                }
+                
+                if (isMovingFromBucket) {
+                    this.querySelector(".flex-grow").appendChild(draggedItem);
+                    updateItemStyle(draggedItem, isCorrect);
+                } else {
+                    const bucketItem = createWordItem({
+                        text: draggedItem.dataset.originalText,
+                        type: draggedItem.dataset.type,
+                        explanation: draggedItem.dataset.explanation
+                    }, this.querySelector(".flex-grow"));
+                    
+                    updateItemStyle(bucketItem, isCorrect);
+                    draggedItem.remove();
+                }
+                
+                if (isCorrect) {
+                    correctCount++;
+                } else {
+                    errorCount++;
+                }
+                
+                draggedItem = null;
+                updateCounters();
+                updateProgress();
+                showFeedback(isCorrect, bucketType);
+                
+                if (completedWords === wordsList.length) {
+                    setTimeout(showSuccessModal, 1000);
+                }
+            }
+            
+            function updateItemStyle(item, isCorrect) {
+                item.className = item.className.replace(/bg-\w+-\d+ border-\w+-\d+ text-\w+-\d+/g, '');
+                
+                if (isCorrect) {
+                    item.classList.add("bg-green-100", "border-green-500", "text-green-800");
+                } else {
+                    item.classList.add("bg-red-100", "border-red-500", "text-red-800");
+                }
+            }
+            
+            function updateCounters() {
+                correctCountEl.textContent = correctCount;
+                errorCountEl.textContent = errorCount;
+            }
+            
+            function updateProgress() {
+                const progressPercent = (completedWords / wordsList.length) * 100;
+                progressBar.style.width = `${progressPercent}%`;
+                progressText.textContent = `${completedWords}/${wordsList.length}`;
+            }
+            
+            function showFeedback(isCorrect, bucketType) {
+                feedback.classList.remove("hidden");
+                feedback.classList.add("bounce");
+                
+                const emojis = isCorrect ? ["🎉", "👍", "✅", "🌟", "🔥"] : ["❌", "🤔", "⚠️", "🧐", "📝"];
+                const randomEmoji = emojis[Math.floor(Math.random() * emojis.length)];
+                
+                if (isCorrect) {
+                    playCorrectSound(); // Play generated sound
+                    feedback.classList.remove("bg-red-100", "border-red-500");
+                    feedback.classList.add("bg-green-100", "border-green-500");
+                    feedbackText.innerHTML = `${randomEmoji} Правильно! Это действительно <strong>${bucketType}</strong>!`;
+                    feedbackText.className = "text-xl font-bold text-green-700";
+                } else {
+                    playWrongSound(); // Play generated sound
+                    feedback.classList.remove("bg-green-100", "border-green-500");
+                    feedback.classList.add("bg-red-100", "border-red-500");
+                    feedbackText.innerHTML = `${randomEmoji} Ошибка! Это не <strong>${bucketType}</strong>!`;
+                    feedbackText.className = "text-xl font-bold text-red-700";
+                }
+                
+                setTimeout(() => {
+                    feedback.classList.remove("bounce");
+                    setTimeout(() => {
+                        feedback.classList.add("hidden");
+                    }, 1500);
+                }, 500);
+            }
+            
+            function showSuccessModal() {
+                playVictorySound(); // Play generated victory sound
+                finalCorrect.textContent = correctCount;
+                finalErrors.textContent = errorCount;
+                successModal.classList.remove("hidden");
+                createFireworks();
+            }
+            
+            function createFireworks() {
+                const fireworksContainer = document.querySelector(".success-frame");
+                const colors = ["#FF5252", "#FFD740", "#64FFDA", "#448AFF", "#E040FB", "#69F0AE"];
+                
+                for (let i = 0; i < 50; i++) {
+                    setTimeout(() => {
+                        const firework = document.createElement("div");
+                        firework.className = "firework";
+                        firework.style.left = Math.random() * 100 + "%";
+                        firework.style.top = Math.random() * 100 + "%";
+                        firework.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                        firework.style.animationDuration = (0.5 + Math.random() * 1) + "s";
+                        firework.style.width = (5 + Math.random() * 10) + "px";
+                        firework.style.height = firework.style.width;
+                        
+                        fireworksContainer.appendChild(firework);
+                        
+                        setTimeout(() => {
+                            firework.remove();
+                        }, 1000);
+                    }, i * 100);
+                }
+            }
+            
+            Object.values(buckets).forEach(bucket => {
+                bucket.addEventListener("dragover", dragOver);
+                bucket.addEventListener("dragleave", dragLeave);
+                bucket.addEventListener("drop", drop);
+            });
+            
+            document.addEventListener("dragend", dragEnd);
+            
+            restartBtn.addEventListener("click", () => {
+                successModal.classList.add("hidden");
+                shuffledWords = [...wordsList].sort(() => Math.random() - 0.5);
+                initGame();
+            });
+            
+            initGame();
+        });
+    </script>
+</body>
+</html>
